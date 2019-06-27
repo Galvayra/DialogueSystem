@@ -1,3 +1,4 @@
 cnuma/
 dataset/*
 !dataset/*.py
+dictionary/
