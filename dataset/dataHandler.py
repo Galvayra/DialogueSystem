@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import sys
 from .variables import *
-from DialogueSystem.dataset.CorpusReader import CorpusReader
+from DialogueSystem.dataset.corpusReader import CorpusReader
 
 # if sys.argv[0].split('/')[-1] == "build.py":
 
