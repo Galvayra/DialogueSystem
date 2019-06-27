@@ -10,6 +10,8 @@ class DataHandler(CorpusReader):
     def __init__(self):
         super().__init__()
 
-    def load_corpus(self):
-        self.set_dictionary()
+    def set_dictionary(self):
+        super().set_dictionary()
 
+    def dump(self):
+        super().dump()

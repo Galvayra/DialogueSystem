@@ -21,3 +21,6 @@ KEY_SPK = "spk"
 KEY_SNT = "snt"
 KEY_MOR = "mor"
 KEY_SA = "sa"
+
+SAVE_PATH = "dictionary/"
+SAVE_NAME = "dict"

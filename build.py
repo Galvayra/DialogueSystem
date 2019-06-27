@@ -13,4 +13,5 @@ from DialogueSystem.dataset.dataHandler import DataHandler
 
 if __name__ == '__main__':
     dataHandler = DataHandler()
-    dataHandler.load_corpus()
+    dataHandler.set_dictionary()
+    dataHandler.dump()

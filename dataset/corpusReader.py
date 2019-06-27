@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 from .variables import *
+from copy import deepcopy
+import json
 
 
 class CorpusReader:
@@ -41,7 +43,12 @@ class CorpusReader:
         }
         
         """
-        self.corpus_dict = {name: dict() for name in PATH_OF_CORPUS}
+        self.corpus_dict = {
+            name: {
+                KEY_DIAL_ID: list()
+            }
+            for name in PATH_OF_CORPUS
+        }
 
     @property
     def corpus_list(self):
@@ -58,8 +65,16 @@ class CorpusReader:
 
         parser = DialogueParser(target=ETRI)
 
-        for dial_id, utt in parser.generator(etri_train + etri_test):
-            print(dial_id, utt)
+        for dial_id, dialogue_dict in parser.generator(etri_train + etri_test):
+            key = KEY_DIAL + '_' + str(dial_id)
+            self.corpus_dict[ETRI][KEY_DIAL_ID].append(dial_id)
+            self.corpus_dict[ETRI][key] = deepcopy(dialogue_dict)
+
+    def dump(self):
+        with open(SAVE_PATH + SAVE_NAME, 'w') as outfile:
+            json.dump(self.corpus_dict, outfile, indent=4)
+            print("\n=========================================================\n\n")
+            print("success make dump file! - file name is", SAVE_PATH + SAVE_NAME)
 
 
 class DialogueParser:
