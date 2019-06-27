@@ -1,17 +1,8 @@
 # -*- coding: utf-8 -*-
 
-import sys
-from os import path
-
-try:
-    import DialogueSystem
-except ImportError:
-    sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
-
-from DialogueSystem.dataset.dataHandler import DataHandler
-
+from DialogueSystem.dataset.corpusReader import CorpusReader
 
 if __name__ == '__main__':
-    dataHandler = DataHandler()
-    dataHandler.set_dictionary()
-    dataHandler.dump()
+    corpus_reader = CorpusReader()
+    corpus_reader.set_dictionary()
+    corpus_reader.dump()
