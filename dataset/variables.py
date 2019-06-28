@@ -24,3 +24,5 @@ KEY_SA = "sa"
 
 SAVE_PATH = "dictionary/"
 SAVE_NAME = "dict"
+
+COMMAND = "cnuma/stdio.sh"
