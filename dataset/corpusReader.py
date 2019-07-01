@@ -4,6 +4,7 @@ from copy import deepcopy
 from collections import OrderedDict
 import json
 import subprocess
+import re
 
 
 class CorpusReader:
@@ -62,18 +63,45 @@ class CorpusReader:
             return r_file.readlines()
 
     def set_dictionary(self):
-        etri_train = self.__read_corpus(PATH_OF_CORPUS[ETRI] + "train")
-        etri_test = self.__read_corpus(PATH_OF_CORPUS[ETRI] + "test")
 
-        parser = DialogueParser(corpus=(etri_test), target=ETRI)
+        conv_part1 = self.__read_corpus(PATH_OF_CORPUS[CONV] + "part1")
+        conv_part2 = self.__read_corpus(PATH_OF_CORPUS[CONV] + "part2")
+        conv_example = self.__read_corpus(PATH_OF_CORPUS[CONV] + "example")
 
+        speech_train = self.__read_corpus(PATH_OF_CORPUS[SPEECH] + "train")
+        speech_test = self.__read_corpus(PATH_OF_CORPUS[SPEECH] + "test")
+
+
+        # parser = DialogueParser(corpus=conv_example, target=CONV)
+        # parser = DialogueParser(corpus=conv_train + conv_test, target=CONV)
+
+        parser = DialogueParser(corpus=conv_example, target=CONV)
         for dial_id, dialogue_dict in parser.dialogue_dict_generator():
-            self.__copy_into_corpus_dict(dial_id, dialogue_dict)
+            self.__copy_into_corpus_dict(dial_id, dialogue_dict, target=CONV)
 
-    def __copy_into_corpus_dict(self, dial_id, dialogue_dict):
-        key = KEY_DIAL + '_' + str(dial_id)
-        self.corpus_dict[ETRI][KEY_DIAL_ID].append(dial_id)
-        self.corpus_dict[ETRI][key] = deepcopy(dialogue_dict)
+        # for dial_id, dialogue_dict in parser.dialogue_dict_generator2():
+        #     self.__copy_into_corpus_dict(dial_id, dialogue_dict)
+
+        # etri_train = self.__read_corpus(PATH_OF_CORPUS[ETRI] + "train")
+        # etri_test = self.__read_corpus(PATH_OF_CORPUS[ETRI] + "test")
+        #
+        # parser = DialogueParser(corpus=(etri_train + etri_test), target=ETRI)
+        #
+        # for dial_id, dialogue_dict in parser.dialogue_dict_generator():
+        #     self.__copy_into_corpus_dict(dial_id, dialogue_dict)
+
+    def __copy_into_corpus_dict(self, dial_id, dialogue_dict, target):
+        if target == ETRI:
+            key = ETRI
+        elif target == CONV:
+            key = CONV
+        elif target == SPEECH:
+            key = SPEECH
+        else:
+            key = EMERG
+
+        self.corpus_dict[key][KEY_DIAL_ID].append(dial_id)
+        self.corpus_dict[key][KEY_DIAL + '_' + str(dial_id)] = deepcopy(dialogue_dict)
 
     def dump(self):
         with open(SAVE_PATH + SAVE_NAME, 'w') as outfile:
@@ -98,17 +126,18 @@ class DialogueParser:
 
     @staticmethod
     def __init_dialog_dict():
-        dialog_dict = OrderedDict({
+        dialogue_dict = OrderedDict({
             KEY_UTT_ID: list()
         })
 
-        return dialog_dict
+        return dialogue_dict
 
     def __dialogue_generator(self):
-        start_index = 0
         dial_id = 0
 
         if self.target == ETRI:
+            start_index = 0
+
             for i, line in enumerate(self.corpus_lines):
                 if line.startswith('<dial>'):
                     start_index = i
@@ -118,6 +147,22 @@ class DialogueParser:
                     dial_id += 1
 
                     yield dial_id, self.corpus_lines[start_index:end_index]
+        elif self.target == CONV or self.target == SPEECH:
+            start_index = len('\n\n')
+
+            for i, line in enumerate(self.corpus_lines):
+                if i == 0:
+                    continue
+
+                if line.startswith('; '):
+                    end_index = i - len('\n\n')
+                    dial_id += 1
+
+                    yield dial_id, self.corpus_lines[start_index:end_index]
+                    start_index = i + len('\n\n')
+
+            dial_id += 1
+            yield dial_id, self.corpus_lines[start_index:]
 
     def __utterance_generator(self, dialogue):
         start_index = 0
@@ -133,6 +178,20 @@ class DialogueParser:
                     utt_id += 1
 
                     yield utt_id, dialogue[start_index:end_index]
+        elif self.target == CONV or self.target == SPEECH:
+            for i, line in enumerate(dialogue):
+                if i == 0:
+                    continue
+
+                if line.startswith('\n'):
+                    end_index = i
+                    utt_id += 1
+
+                    yield utt_id, dialogue[start_index:end_index]
+                    start_index = end_index + 1
+
+            utt_id += 1
+            yield utt_id, dialogue[start_index:]
 
     def dialogue_dict_generator(self):
 
@@ -160,37 +219,63 @@ class DialogueParser:
             }
         }
         """
+        for dial_id, dialogue in self.__dialogue_generator():
+            dialogue_dict = self.__init_dialog_dict()
+
+            for utt_id, utt in self.__utterance_generator(dialogue):
+                spk, snt, sa = self.__get_slots(utt)
+
+                dialogue_dict[KEY_UTT_ID].append(utt_id)
+                key = KEY_UTT + '_' + str(utt_id)
+                dialogue_dict[key] = {
+                    KEY_SPK: spk,
+                    KEY_SNT: snt,
+                    KEY_MOR: self.__get_morpheme(snt),
+                    KEY_SA: sa
+                }
+
+            yield dial_id, dialogue_dict
+
+    def __get_slots(self, utt):
+        spk = str()
+        snt = str()
+        sa = str()
 
         if self.target == ETRI:
-            for dial_id, dialogue in self.__dialogue_generator():
-                dialogue_dict = self.__init_dialog_dict()
+            utt = ' '.join(utt)
 
+            spk = utt[utt.index('<spk> ') + len('<spk> '):utt.index(' </spk>')]
+            snt = utt[utt.index('<snt> ') + len('<snt> '):utt.index(' </snt>')]
+            sa = utt[utt.index('<sa> ') + len('<sa> '):utt.index(' </sa>')]
 
+            if spk == "로봇":
+                spk = 'agent'
+            else:
+                spk = 'user'
 
-                for utt_id, utt in self.__utterance_generator(dialogue):
-                    utt = ' '.join(utt)
+        elif self.target == CONV or self.target == SPEECH:
 
-                    spk = utt[utt.index('<spk> ') + len('<spk> '):utt.index(' </spk>')]
-                    snt = utt[utt.index('<snt> ') + len('<snt> '):utt.index(' </snt>')]
-                    sa = utt[utt.index('<sa> ') + len('<sa> '):utt.index(' </sa>')]
+            for line in utt:
+                if line.startswith('/SP/'):
+                    spk = line[len('/SP/'):]
+                    spk = spk.split()[0]
 
-                    if spk == "로봇":
-                        spk = 'agent'
-                    else:
-                        spk = 'user'
+                if line.startswith('/KS/'):
+                    snt = line[len('/KS/'):]
+                    snt = snt.split()
+                    snt = ' '.join(snt)
+                    snt = re.sub('\([가-힣]+\) ', '', snt)
 
-                    dialogue_dict[KEY_UTT_ID].append(utt_id)
-                    key = KEY_UTT + '_' + str(utt_id)
-                    dialogue_dict[key] = {
-                        KEY_SPK: spk,
-                        KEY_SNT: snt,
-                        # KEY_MOR: self.__get_morpheme(snt),
-                        KEY_SA: sa
-                    }
+                if line.startswith('/SA/'):
+                    sa = line[len('/SA/'):]
+                    sa = sa.split()[0]
 
-                yield dial_id, dialogue_dict
-        else:
-            pass
+            if spk == "Agnt":
+                spk = 'agent'
+            else:
+                spk = 'user'
+
+        return spk, snt, sa
 
     @staticmethod
     def __get_morpheme(snt):
