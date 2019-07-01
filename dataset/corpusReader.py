@@ -5,6 +5,9 @@ from collections import OrderedDict
 import json
 import subprocess
 import re
+import sys
+
+USE_MA = False
 
 
 class CorpusReader:
@@ -63,32 +66,27 @@ class CorpusReader:
             return r_file.readlines()
 
     def set_dictionary(self):
-
+        etri_train = self.__read_corpus(PATH_OF_CORPUS[ETRI] + "train")
+        etri_test = self.__read_corpus(PATH_OF_CORPUS[ETRI] + "test")
         conv_part1 = self.__read_corpus(PATH_OF_CORPUS[CONV] + "part1")
         conv_part2 = self.__read_corpus(PATH_OF_CORPUS[CONV] + "part2")
-        conv_example = self.__read_corpus(PATH_OF_CORPUS[CONV] + "example")
-
         speech_train = self.__read_corpus(PATH_OF_CORPUS[SPEECH] + "train")
         speech_test = self.__read_corpus(PATH_OF_CORPUS[SPEECH] + "test")
 
+        parser = DialogueParser(corpus=etri_train + etri_test, target=ETRI)
+        for dial_id, dialogue_dict in parser.dialogue_dict_generator():
+            self.__copy_into_corpus_dict(dial_id, dialogue_dict, target=ETRI)
+            self.__print_progress(dial_id, parser.len_of_dialogue, prefix=ETRI)
 
-        # parser = DialogueParser(corpus=conv_example, target=CONV)
-        # parser = DialogueParser(corpus=conv_train + conv_test, target=CONV)
-
-        parser = DialogueParser(corpus=conv_example, target=CONV)
+        parser = DialogueParser(corpus=conv_part1 + conv_part2, target=CONV)
         for dial_id, dialogue_dict in parser.dialogue_dict_generator():
             self.__copy_into_corpus_dict(dial_id, dialogue_dict, target=CONV)
+            self.__print_progress(dial_id, parser.len_of_dialogue, prefix=CONV)
 
-        # for dial_id, dialogue_dict in parser.dialogue_dict_generator2():
-        #     self.__copy_into_corpus_dict(dial_id, dialogue_dict)
-
-        # etri_train = self.__read_corpus(PATH_OF_CORPUS[ETRI] + "train")
-        # etri_test = self.__read_corpus(PATH_OF_CORPUS[ETRI] + "test")
-        #
-        # parser = DialogueParser(corpus=(etri_train + etri_test), target=ETRI)
-        #
-        # for dial_id, dialogue_dict in parser.dialogue_dict_generator():
-        #     self.__copy_into_corpus_dict(dial_id, dialogue_dict)
+        parser = DialogueParser(corpus=speech_train, target=SPEECH)
+        for dial_id, dialogue_dict in parser.dialogue_dict_generator():
+            self.__copy_into_corpus_dict(dial_id, dialogue_dict, target=SPEECH)
+            self.__print_progress(dial_id, parser.len_of_dialogue, prefix=SPEECH)
 
     def __copy_into_corpus_dict(self, dial_id, dialogue_dict, target):
         if target == ETRI:
@@ -103,18 +101,28 @@ class CorpusReader:
         self.corpus_dict[key][KEY_DIAL_ID].append(dial_id)
         self.corpus_dict[key][KEY_DIAL + '_' + str(dial_id)] = deepcopy(dialogue_dict)
 
+    @staticmethod
+    def __print_progress(iteration, total, prefix='', suffix='', decimals=1, bar_length=50):
+        format_str = "{0:." + str(decimals) + "f}"
+        percent = format_str.format(100 * (iteration / float(total)))
+        filled_length = int(round(bar_length * iteration / float(total)))
+        bar = '#' * filled_length + '-' * (bar_length - filled_length)
+        sys.stdout.write('\r%s |%s| %s%s %s' % (prefix.ljust(7), bar, percent, '%', suffix)),
+        if iteration == total:
+            sys.stdout.write('\n')
+        sys.stdout.flush()
+
     def dump(self):
         with open(SAVE_PATH + SAVE_NAME, 'w') as outfile:
             json.dump(self.corpus_dict, outfile, indent=4)
-            print "\n=========================================================\n\n"
-            print "success make dump file! - file name is", SAVE_PATH + SAVE_NAME
+            print " \nsuccess make dump file! - file name is" + SAVE_PATH + SAVE_NAME + "\n\n"
 
 
 class DialogueParser:
     def __init__(self, corpus, target):
         self.__corpus_lines = corpus
         self.__target = target
-        print "The Target is -", self.target, "\n\n"
+        self.len_of_dialogue = self.__init_len_of_dialogue()
 
     @property
     def corpus_lines(self):
@@ -123,6 +131,14 @@ class DialogueParser:
     @property
     def target(self):
         return self.__target
+
+    def __init_len_of_dialogue(self):
+        len_of_dialogue = int()
+
+        for _, _ in self.__dialogue_generator():
+            len_of_dialogue += 1
+
+        return len_of_dialogue
 
     @staticmethod
     def __init_dialog_dict():
@@ -225,14 +241,27 @@ class DialogueParser:
             for utt_id, utt in self.__utterance_generator(dialogue):
                 spk, snt, sa = self.__get_slots(utt)
 
+                # # line test
+                # if spk and snt and sa:
+                #     pass
+                # else:
+                #     print dial_id, utt_id
+
                 dialogue_dict[KEY_UTT_ID].append(utt_id)
                 key = KEY_UTT + '_' + str(utt_id)
-                dialogue_dict[key] = {
-                    KEY_SPK: spk,
-                    KEY_SNT: snt,
-                    KEY_MOR: self.__get_morpheme(snt),
-                    KEY_SA: sa
-                }
+                if USE_MA:
+                    dialogue_dict[key] = {
+                        KEY_SPK: spk,
+                        KEY_SNT: snt,
+                        KEY_MOR: self.__get_morpheme(snt),
+                        KEY_SA: sa
+                    }
+                else:
+                    dialogue_dict[key] = {
+                        KEY_SPK: spk,
+                        KEY_SNT: snt,
+                        KEY_SA: sa
+                    }
 
             yield dial_id, dialogue_dict
 
@@ -252,9 +281,7 @@ class DialogueParser:
                 spk = 'agent'
             else:
                 spk = 'user'
-
         elif self.target == CONV or self.target == SPEECH:
-
             for line in utt:
                 if line.startswith('/SP/'):
                     spk = line[len('/SP/'):]
