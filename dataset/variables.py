@@ -8,7 +8,7 @@ EMERG = "EMERG"
 
 PATH_OF_CORPUS = {
     ETRI: CORPUS + "1_ETRI/",
-    CONV: CORPUS + "2_CONV/",
+    # CONV: CORPUS + "2_CONV/",
     SPEECH: CORPUS + "3_SPEECH/",
     EMERG: CORPUS + "4_EMERG/"
 }
@@ -23,6 +23,8 @@ KEY_MOR = "mor"
 KEY_SA = "sa"
 
 SAVE_PATH = "dictionary/"
-SAVE_NAME = "dict"
+SAVE_TRAIN = "dict_train"
+SAVE_TEST = "dict_test"
 
 COMMAND = "cnuma/stdio.sh"
+USE_MA = False

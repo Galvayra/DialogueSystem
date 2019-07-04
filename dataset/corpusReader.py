@@ -7,11 +7,9 @@ import subprocess
 import re
 import sys
 
-USE_MA = False
-
 
 class CorpusReader:
-    def __init__(self):
+    def __init__(self, is_test=False):
         self.__corpus_list = [name for name in PATH_OF_CORPUS]
 
         """
@@ -37,9 +35,6 @@ class CorpusReader:
                 }
             }
             
-            "CONV": {
-            }
-            
             .
             .
             .
@@ -49,12 +44,14 @@ class CorpusReader:
         }
         
         """
-        self.corpus_dict = {
+        self.corpus_dict = OrderedDict({
             name: OrderedDict({
                 KEY_DIAL_ID: list()
             })
-            for name in PATH_OF_CORPUS
-        }
+            for name in self.corpus_list
+        })
+
+        self.__is_test = is_test
 
     @property
     def corpus_list(self):
@@ -65,28 +62,31 @@ class CorpusReader:
         with open(_path, 'r') as r_file:
             return r_file.readlines()
 
+    @property
+    def is_test(self):
+        return self.__is_test
+
     def set_dictionary(self):
-        etri_train = self.__read_corpus(PATH_OF_CORPUS[ETRI] + "train")
-        etri_test = self.__read_corpus(PATH_OF_CORPUS[ETRI] + "test")
-        conv_part1 = self.__read_corpus(PATH_OF_CORPUS[CONV] + "part1")
-        conv_part2 = self.__read_corpus(PATH_OF_CORPUS[CONV] + "part2")
-        speech_train = self.__read_corpus(PATH_OF_CORPUS[SPEECH] + "train")
-        speech_test = self.__read_corpus(PATH_OF_CORPUS[SPEECH] + "test")
+        if self.is_test:
+            speech_test = self.__read_corpus(PATH_OF_CORPUS[SPEECH] + "test")
+            parser = DialogueParser(corpus=speech_test, target=SPEECH)
+            for dial_id, dialogue_dict in parser.dialogue_dict_generator():
+                self.__copy_into_corpus_dict(dial_id, dialogue_dict, target=SPEECH)
+                self.__print_progress(dial_id, parser.len_of_dialogue, prefix=SPEECH)
+        else:
+            etri_train = self.__read_corpus(PATH_OF_CORPUS[ETRI] + "train")
+            etri_test = self.__read_corpus(PATH_OF_CORPUS[ETRI] + "test")
+            speech_train = self.__read_corpus(PATH_OF_CORPUS[SPEECH] + "train")
 
-        parser = DialogueParser(corpus=etri_train + etri_test, target=ETRI)
-        for dial_id, dialogue_dict in parser.dialogue_dict_generator():
-            self.__copy_into_corpus_dict(dial_id, dialogue_dict, target=ETRI)
-            self.__print_progress(dial_id, parser.len_of_dialogue, prefix=ETRI)
+            parser = DialogueParser(corpus=etri_train + etri_test, target=ETRI)
+            for dial_id, dialogue_dict in parser.dialogue_dict_generator():
+                self.__copy_into_corpus_dict(dial_id, dialogue_dict, target=ETRI)
+                self.__print_progress(dial_id, parser.len_of_dialogue, prefix=ETRI)
 
-        parser = DialogueParser(corpus=conv_part1 + conv_part2, target=CONV)
-        for dial_id, dialogue_dict in parser.dialogue_dict_generator():
-            self.__copy_into_corpus_dict(dial_id, dialogue_dict, target=CONV)
-            self.__print_progress(dial_id, parser.len_of_dialogue, prefix=CONV)
-
-        parser = DialogueParser(corpus=speech_train, target=SPEECH)
-        for dial_id, dialogue_dict in parser.dialogue_dict_generator():
-            self.__copy_into_corpus_dict(dial_id, dialogue_dict, target=SPEECH)
-            self.__print_progress(dial_id, parser.len_of_dialogue, prefix=SPEECH)
+            parser = DialogueParser(corpus=speech_train, target=SPEECH)
+            for dial_id, dialogue_dict in parser.dialogue_dict_generator():
+                self.__copy_into_corpus_dict(dial_id, dialogue_dict, target=SPEECH)
+                self.__print_progress(dial_id, parser.len_of_dialogue, prefix=SPEECH)
 
     def __copy_into_corpus_dict(self, dial_id, dialogue_dict, target):
         if target == ETRI:
@@ -113,9 +113,14 @@ class CorpusReader:
         sys.stdout.flush()
 
     def dump(self):
-        with open(SAVE_PATH + SAVE_NAME, 'w') as outfile:
+        if self.is_test:
+            path = SAVE_PATH + SAVE_TEST
+        else:
+            path = SAVE_PATH + SAVE_TRAIN
+
+        with open(path, 'w') as outfile:
             json.dump(self.corpus_dict, outfile, indent=4)
-            print " \nsuccess make dump file! - file name is" + SAVE_PATH + SAVE_NAME + "\n\n"
+            print " \nsuccess make dump file! - file name is" + path + "\n\n"
 
 
 class DialogueParser:
