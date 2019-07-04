@@ -27,4 +27,8 @@ SAVE_TRAIN = "dict_train"
 SAVE_TEST = "dict_test"
 
 COMMAND = "cnuma/stdio.sh"
-USE_MA = False
+USE_MA = True
+
+# The path of 'CNU MA' and 'py_ver'
+CNUMA_PATH = "/home/galvayra/Project/DialogueSystem/cnuma"
+PY_VER = "/py_ver"

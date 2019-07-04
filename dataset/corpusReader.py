@@ -3,9 +3,13 @@ from .variables import *
 from copy import deepcopy
 from collections import OrderedDict
 import json
-import subprocess
 import re
 import sys
+sys.path.append(CNUMA_PATH + PY_VER)
+
+# Load CNU morpheme analyzer
+from DialogueSystem.cnuma.py_ver.batch_mode import MAClient
+mac = MAClient.create_from_args()
 
 
 class CorpusReader:
@@ -258,7 +262,7 @@ class DialogueParser:
                     dialogue_dict[key] = {
                         KEY_SPK: spk,
                         KEY_SNT: snt,
-                        KEY_MOR: self.__get_morpheme(snt),
+                        KEY_MOR: mac.get_single_line(snt),
                         KEY_SA: sa
                     }
                 else:
@@ -308,18 +312,3 @@ class DialogueParser:
                 spk = 'user'
 
         return spk, snt, sa
-
-    @staticmethod
-    def __get_morpheme(snt):
-        mor = list()
-        cmd = COMMAND + ' ' + '_'.join(snt.split())
-        ma_result = subprocess.check_output(cmd, shell=True)
-        ma_result = ma_result.decode('utf-8')
-
-        for word in ma_result.split():
-            if word != "None":
-                word = word.split('|')[1:]
-                word = '/'.join(word)
-                mor.append(word)
-
-        return mor
