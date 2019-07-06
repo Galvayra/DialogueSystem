@@ -2,7 +2,7 @@
 
 CORPUS = "dataset/corpus/"
 ETRI = "ETRI"
-CONV = "CONV"
+# CONV = "CONV"
 SPEECH = "SPEECH"
 EMERG = "EMERG"
 
@@ -26,8 +26,7 @@ SAVE_PATH = "dictionary/"
 SAVE_TRAIN = "dict_train"
 SAVE_TEST = "dict_test"
 
-COMMAND = "cnuma/stdio.sh"
-USE_MA = True
+USE_MA = False
 
 # The path of 'CNU MA' and 'py_ver'
 CNUMA_PATH = "/home/galvayra/Project/DialogueSystem/cnuma"

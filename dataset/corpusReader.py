@@ -95,8 +95,8 @@ class CorpusReader:
     def __copy_into_corpus_dict(self, dial_id, dialogue_dict, target):
         if target == ETRI:
             key = ETRI
-        elif target == CONV:
-            key = CONV
+        # elif target == CONV:
+        #     key = CONV
         elif target == SPEECH:
             key = SPEECH
         else:
@@ -122,9 +122,9 @@ class CorpusReader:
         else:
             path = SAVE_PATH + SAVE_TRAIN
 
-        with open(path, 'w') as outfile:
-            json.dump(self.corpus_dict, outfile, indent=4)
-            print " \nsuccess make dump file! - file name is" + path + "\n\n"
+        for name, corpus_dict in self.corpus_dict.items():
+            with open(path + '_' + name, 'w') as outfile:
+                json.dump(corpus_dict, outfile, indent=4)
 
 
 class DialogueParser:
@@ -172,7 +172,8 @@ class DialogueParser:
                     dial_id += 1
 
                     yield dial_id, self.corpus_lines[start_index:end_index]
-        elif self.target == CONV or self.target == SPEECH:
+        # elif self.target == CONV or self.target == SPEECH:
+        elif self.target == SPEECH:
             start_index = len('\n\n')
 
             for i, line in enumerate(self.corpus_lines):
@@ -203,7 +204,8 @@ class DialogueParser:
                     utt_id += 1
 
                     yield utt_id, dialogue[start_index:end_index]
-        elif self.target == CONV or self.target == SPEECH:
+        # elif self.target == CONV or self.target == SPEECH:
+        elif self.target == SPEECH:
             for i, line in enumerate(dialogue):
                 if i == 0:
                     continue
@@ -290,7 +292,8 @@ class DialogueParser:
                 spk = 'agent'
             else:
                 spk = 'user'
-        elif self.target == CONV or self.target == SPEECH:
+        # elif self.target == CONV or self.target == SPEECH:
+        elif self.target == SPEECH:
             for line in utt:
                 if line.startswith('/SP/'):
                     spk = line[len('/SP/'):]
