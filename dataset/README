@@ -1,0 +1,11 @@
+1) build_emerg
+
+"corpus/final_target.csv" 파일에서 Category가 존재하는 conversation 복사 (from 'EMERG' to '4_EMERG')
+
+
+
+2) build_speech_test.sh
+
+"speech/test_origin" 파일에 Tag 부착  --> speech/test
+
+

@@ -2,4 +2,5 @@ cnuma/
 dataset/*
 !dataset/*.py
 !dataset/*.sh
+!dataset/README
 dictionary/
