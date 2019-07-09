@@ -1,6 +1,6 @@
-1) build_emerg
+1) build_emerg.py
 
-"corpus/final_target.csv" 파일에서 Category가 존재하는 conversation 복사 (from 'EMERG' to '4_EMERG')
+"corpus/final_target.csv" 파일에서 Category가 존재하는 conversation 복사 (from 'EMERG_ORIGIN' to 'EMERG_TARGET')
 
 
 
