@@ -1,10 +1,10 @@
-1) build_emerg.py
+1) build_emerg.py (python version 3.x)
 
 "corpus/final_target.csv" 파일에서 Category가 존재하는 conversation 복사 (from 'EMERG_ORIGIN' to 'EMERG_TARGET')
 
 
 
-2) build_speech_test.sh
+2) build_speech_test.sh (python version 2.x)
 
 "speech/test_origin" 파일에 Tag 부착  --> speech/test
 
