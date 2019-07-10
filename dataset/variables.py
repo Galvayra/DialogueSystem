@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import os
 
 CORPUS = "dataset/corpus/"
 ETRI = "ETRI"
@@ -26,8 +27,8 @@ SAVE_PATH = "dictionary/"
 SAVE_TRAIN = "dict_train"
 SAVE_TEST = "dict_test"
 
-USE_MA = False
+USE_MA = True
 
 # The path of 'CNU MA' and 'py_ver'
-CNUMA_PATH = "/home/galvayra/Project/DialogueSystem/cnuma"
+CNUMA_PATH = os.getcwd() + "/cnuma"
 PY_VER = "/py_ver"
